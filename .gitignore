@@ -1,0 +1,40 @@
+# Binaries e artefatos de build do GOPATH
+/bin/
+/pkg/
+
+# Binários compilados (go build sem extensão)
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Binário gerado por `go build` neste projeto
+src/hello/hello
+
+# Cobertura de testes
+*.cover
+coverage.*
+profile.out
+
+# Dependências vendored (descomente se não quiser versionar)
+# vendor/
+
+# Workspace do Go
+go.work
+go.work.sum
+
+# Variáveis de ambiente
+.env
+.env.*
+
+# IDEs e editores
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
