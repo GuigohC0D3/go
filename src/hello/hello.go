@@ -6,9 +6,9 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
-	"strconv"
 )
 
 const monitoramentos = 5
@@ -27,6 +27,10 @@ func main() {
 		case 2:
 			fmt.Println("Exibindo Logs...")
 			imprimirLogs()
+		case 3:
+			adicionarSite()
+		case 4:
+			removerSite()
 		case 0:
 			fmt.Println("Saindo do Programa...")
 			os.Exit(0)
@@ -48,7 +52,10 @@ func exibirIntroducao() {
 func exibirOpcoes() {
 	fmt.Println("1 - Iniciar Monitoramento")
 	fmt.Println("2 - Exibir Logs")
+	fmt.Println("3 - Adicionar novo Site")
+	fmt.Println("4 - Remover Site")
 	fmt.Println("0 - Sair do Programa")
+
 }
 
 func lerComando() int {
@@ -82,7 +89,11 @@ func testaSite(site string) {
 
 	if err != nil {
 		fmt.Println("Ocorreu um erro: ", err)
+		registraLog(site, false)
+		return
 	}
+
+	defer resp.Body.Close()
 
 	if resp.StatusCode == 200 {
 		fmt.Println("Site:", site, "foi carregado com sucesso!")
@@ -107,8 +118,10 @@ func lerSitesDoArquivo() []string {
 	for {
 		linha, err := leitor.ReadString('\n')
 		linha = strings.TrimSpace(linha)
-		
-		sites = append(sites, linha)
+
+		if linha != "" {
+			sites = append(sites, linha)
+		}
 
 		if err == io.EOF {
 			break
@@ -121,7 +134,7 @@ func lerSitesDoArquivo() []string {
 }
 
 func registraLog(site string, status bool) {
-	arquivo, err := os.OpenFile("log.txt", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	arquivo, err := os.OpenFile("log.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 
 	if err != nil {
 		fmt.Println("Ocorreu um erro", err)
@@ -139,4 +152,90 @@ func imprimirLogs() {
 		fmt.Println("Ocorreu um erro: ", err)
 	}
 	fmt.Println(string(arquivo))
+}
+
+func adicionarSite() {
+	var site string
+	fmt.Print("Digite o link do site: ")
+	fmt.Scan(&site)
+
+	site = strings.TrimSpace(site)
+
+	if site == "" {
+		fmt.Println("Site inválido!")
+		return
+	}
+
+	arquivo, err := os.OpenFile("sites.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+
+	if err != nil {
+		fmt.Println("Ocorreu um erro", err)
+		return
+	}
+
+	arquivo.WriteString(site + "\n")
+	arquivo.Close()
+
+	fmt.Println("Site", site, "adicionado com sucesso!")
+}
+
+func removerSite() {
+	sites := lerSitesDoArquivo()
+
+	var lista []string
+	for _, s := range sites {
+		if strings.TrimSpace(s) == "" {
+			continue
+		}
+		lista = append(lista, s)
+	}
+
+	if len(lista) == 0 {
+		fmt.Println("Nenhum site cadastrado!")
+		return
+	}
+
+	fmt.Println("Sites cadastrados:")
+	for i, s := range lista {
+		fmt.Println(i+1, "-", s)
+	}
+	fmt.Println("0 - Cancelar")
+
+	var escolha int
+	fmt.Print("Digite o número do site que deseja remover: ")
+	fmt.Scan(&escolha)
+
+	if escolha == 0 {
+		fmt.Println("Operação cancelada.")
+		return
+	}
+
+	if escolha < 1 || escolha > len(lista) {
+		fmt.Println("Número inválido!")
+		return
+	}
+
+	site := lista[escolha-1]
+
+	var sitesRestantes []string
+	for i, s := range lista {
+		if i == escolha-1 {
+			continue
+		}
+		sitesRestantes = append(sitesRestantes, s)
+	}
+
+	conteudo := strings.Join(sitesRestantes, "\n")
+	if conteudo != "" {
+		conteudo = conteudo + "\n"
+	}
+
+	err := os.WriteFile("sites.txt", []byte(conteudo), 0666)
+
+	if err != nil {
+		fmt.Println("Ocorreu um erro", err)
+		return
+	}
+
+	fmt.Println("Site", site, "removido com sucesso!")
 }
